@@ -13,8 +13,8 @@
 - [ ] notes -> voice
 - [ ] simultaneous voices?
 
-- [ ] Render different LilyPond papers dynamically as Verovio(responsiveness) //include different papers?
-- [ ] fragments (check bug lilypond svg backend)
+- [ ] Render different LilyPond papers dynamically imitating Verovio(responsiveness) //include different papers?
+- [ ] LilyPond fragments (check bug lilypond svg backend)
 
 
 * Figma *
@@ -25,9 +25,9 @@
 
 
 
-- [] Stop using special IDs on patterns? Maybe use instances...
+- [x] Stop using special IDs on patterns? Maybe use instances...
 
 
 
-
+- [ ] Clock sync, Ableton Link maybe?
 

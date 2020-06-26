@@ -6,8 +6,12 @@ FoscPbindScore {
 		selection = FoscSelection();
 	}
 
-	notes { |id, pbind|
-		^FoscPbindPattern.new(this, id.asSymbol, pbind, \note).play;
+	notes { |pbind|
+		^FoscPbindPattern.new(this, pbind, \note).play;
+	}
+
+	voice { |id, pbind|
+		^selection;
 	}
 
 	render { |id, pbind|
@@ -16,44 +20,27 @@ FoscPbindScore {
 		//selection.a.write.asSVG(crop: true);
 
 		/*
-		music = LeafGenerator.container[self.id]
-		voice_direction = {}
+
 		if len(music) > 1:
-		music.simultaneous = True
-		for i, voice in enumerate(music):
-		if i % 2 == 0: #if voice number is even
-		direction = Down
-		else:
-		direction = Up
-		voice_direction[voice.name] = direction
-		override(voice).stem.direction = direction
-		else:
-		voice = music[0]
-		voice_direction[voice.name] = None
+		  music.simultaneous = True
+		  for i, voice in enumerate(music):
+		    if i % 2 == 0: #if voice number is even
+		      direction = Down
+		    else:
+		      direction = Up
+		 voice_direction[voice.name] = direction
+		 override(voice).stem.direction = direction
+		    else:
+		      voice = music[0]
+		      voice_direction[voice.name] = None
 
 		output_path = args.instrument+'/svg/output'
-
-		lilypond_file = LilyPondFile.new(
-		music = music,
-		includes = self.includes
-		)
-		make_ly = persist(lilypond_file).as_ly()
-		ly_path = make_ly[0]
-		cmd = ['lilypond',
-		'-dcrop',
-		'-dno-point-and-click',
-		'-ddelete-intermediate-files',
-		'-dbackend=svg',
-		'-o' + output_path,
-		ly_path]
-		subprocess.run(cmd)
 		*/
-		//"/display" preview: False
 	}
 
 	preview { |id, pbind|
-		"not implemented yet".postln;
-		//"/display" preview: True
+		"not implemented yet".error;
+
 		/*
 		if preview == True:
 		output_path = './preview/'+output_path
@@ -79,20 +66,37 @@ FoscPbindScore {
 	}
 
 	prEvents { |ev|
-		//leaf generator
 		var leaf;
 
-		ev.isRest.debug("isRest");
+		//ev.debug("****** BEFORE CLEANING NILS ******");
+
+		ev.keysValuesDo { |key, value|
+			if (value === Nil)
+			{ ev.removeAt(key) }
+			{ ev.put(key, value) }
+		};
+
+		//ev.debug("****** AFTER CLEANING NILS ******");
+		//("").postln;
 
 		if (ev.isRest)
-		{ leaf = FoscLeafMaker().([nil], [ev.dur.value]) }
-		{ leaf = FoscLeafMaker().([FoscPitch(ev.freq.cpsmidi)], [ev.dur]) }; //.value strip Rest()
+		{ leaf = FoscLeafMaker().([nil], [ev.dur.value]) } //.value strip Rest()
+		{ leaf = FoscLeafMaker().([FoscPitch(ev.freq.cpsmidi)], [ev.dur]) };
 
-		ev.dynamic !? { leaf[0].attach(FoscDynamic(ev.dynamic)) };
+		//workaround for broken FoscDynamic
+		ev.dynamic !? {
+			case
+			{(ev.dynamic == 0) || (ev.dynamic == -inf)} { leaf[0].attach(FoscDynamic('niente', nameIsTextual:true)) } // -inf too?
+			{ev.dynamic.isKindOf(Symbol) || ev.dynamic.isKindOf(String)} { leaf[0].attach(FoscDynamic(ev.dynamic, nameIsTextual:true)) }
+			{ leaf[0].attach(FoscDynamic(ev.dynamic)) }
+		};
+
 		ev.articulation !? { leaf[0].attach(FoscArticulation(ev.articulation)) };
 		ev.fermata !? { leaf[0].attach(FoscFermata(ev.fermata)) };
-		ev.markup !? { leaf[0].attach(FoscMarkup(ev.markup)) };
-		ev.notehead !? { leaf[0].noteHead.tweak.style = ev.notehead };
+		ev.markup !? { leaf[0].attach(FoscMarkup(ev.markup, ev.markupDir)) };
+		ev.noteheadStyle !? { leaf[0].noteHead.tweak.style = ev.noteheadStyle };
+		ev.noteheadSize !? { leaf[0].noteHead.tweak.fontSize = ev.noteheadSize };
+		ev.noteheadColor !? { leaf[0].noteHead.tweak.color = ev.noteheadColor };
 
 		selection = selection ++ leaf;
 
