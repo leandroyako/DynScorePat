@@ -1,9 +1,21 @@
 FoscPbindScore {
 
-	classvar selection;
+	var selection, netAddress, <>instrumentPath;
 
-	init {
+	*new { |foscOutputSubdirPath, foscOutputDirectoryPath, netaddr |
+		^super.new.init(foscOutputSubdirPath, foscOutputDirectoryPath, netaddr)
+	}
+
+	init { | foscOutputSubdirPath, foscOutputDirectoryPath, netaddr |
 		selection = FoscSelection();
+		FoscConfiguration.foscOutputDirectoryPath = foscOutputDirectoryPath;
+		this.instrument(foscOutputSubdirPath);
+		netAddress = netaddr;
+	}
+
+	instrument { |path|
+		FoscConfiguration.foscOutputSubdirPath = path;
+		^instrumentPath = path;
 	}
 
 	notes { |pbind|
@@ -14,25 +26,71 @@ FoscPbindScore {
 		^selection;
 	}
 
-	render { |id, pbind|
+	render { |id, pbind, format = 'svg', crop = true|
+		var oscPath = FoscConfiguration.foscOutputSubdirPath;
+		var route = FoscConfiguration.foscOutputSubdirPath.asString;
+		var lastOutputFileName = FoscIOManager.lastOutputFileName.asString.split($.)[0]; //UNUSED
+		var success, currentOutputFileName;//FoscPersistenceManager ^[outputPath, success];
+//		var fileExist, doneTask, watcher;
 
-		selection.show;
-		//selection.a.write.asSVG(crop: true);
+		/* write file */
+		"% format".format(format).postln;
+		if (format == 'svg')
+		{ success = selection.write.asSVG(crop: crop) }
+		{ selection.show }; //why?
 
+		lastOutputFileName.postln;
+		currentOutputFileName = success[0].asString.split($.)[0].split($/).last;
+		success.postln;
+		currentOutputFileName.postln;
+		//netAddress.sendMsg('newStaff', oscPath, route, currentOutputFileName);
+		netAddress.sendMsg('newStaff', route, currentOutputFileName);
+/*
+		Entiendo que no es necesario porque write usa systemCmd (sincrónico)
+			success = selection.write.asSVG(crop: crop) }
+
+
+		fileExist = Task {
+			while ( { File.exists(success[0]).not },
+				{
+					"file doesn't exists".postln;
+					success[0].postln;
+					File.exists(success[0]).postln;
+					0.1.wait;
+				}
+			)
+		};
+
+		doneTask = Task {
+			netAddress.sendMsg(oscPath, route, svg);
+			"Render finished".postln;
+
+		};
+
+		watcher = SimpleController(fileExist)
+		.put(\stopped, { |... args|
+			watcher.remove;
+			args.debug("got stopped notification");
+			doneTask.play;
+		});
+
+		fileExist.play;
+
+*/
 		/*
 
 		if len(music) > 1:
-		  music.simultaneous = True
-		  for i, voice in enumerate(music):
-		    if i % 2 == 0: #if voice number is even
-		      direction = Down
-		    else:
-		      direction = Up
-		 voice_direction[voice.name] = direction
-		 override(voice).stem.direction = direction
-		    else:
-		      voice = music[0]
-		      voice_direction[voice.name] = None
+		music.simultaneous = True
+		for i, voice in enumerate(music):
+		if i % 2 == 0: #if voice number is even
+		direction = Down
+		else:
+		direction = Up
+		voice_direction[voice.name] = direction
+		override(voice).stem.direction = direction
+		else:
+		voice = music[0]
+		voice_direction[voice.name] = None
 
 		output_path = args.instrument+'/svg/output'
 		*/
@@ -75,6 +133,8 @@ FoscPbindScore {
 			{ ev.removeAt(key) }
 			{ ev.put(key, value) }
 		};
+
+		ev.instrumentPath !? { this.instrument(ev.instrumentPath) };
 
 		//ev.debug("****** AFTER CLEANING NILS ******");
 		//("").postln;
