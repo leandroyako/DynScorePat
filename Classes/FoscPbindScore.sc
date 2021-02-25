@@ -22,6 +22,11 @@ FoscPbindScore {
 		^FoscPbindPattern.new(this, pbind, \note).play;
 	}
 
+	newPart { |instrument|
+		instrument = this.instrumentPath; //mmmm
+		netAddress.sendMsg('newPart', instrument)
+	}
+
 	voice { |id, pbind|
 		^selection;
 	}
