@@ -27,8 +27,17 @@ FoscPbindScore {
 		netAddress.sendMsg('newPart', instrument)
 	}
 
-	voice { |id, pbind|
+	scroll {
+		netAddress.sendMsg('scroll', this.instrumentPath);
+	}
+
+
+	selection{
 		^selection;
+	}
+
+	format {
+		^FoscContainer(selection).format;
 	}
 
 	render { |id, pbind, format = 'svg', crop = true|
@@ -36,69 +45,18 @@ FoscPbindScore {
 		var route = FoscConfiguration.foscOutputSubdirPath.asString;
 		var lastOutputFileName = FoscIOManager.lastOutputFileName.asString.split($.)[0]; //UNUSED
 		var success, currentOutputFileName;//FoscPersistenceManager ^[outputPath, success];
-//		var fileExist, doneTask, watcher;
 
 		/* write file */
-		"% format".format(format).postln;
+		//"% format".format(format).postln;
 		if (format == 'svg')
 		{ success = selection.write.asSVG(crop: crop) }
 		{ selection.show }; //why?
 
-		lastOutputFileName.postln;
+		//lastOutputFileName.postln;
 		currentOutputFileName = success[0].asString.split($.)[0].split($/).last;
-		success.postln;
-		currentOutputFileName.postln;
-		//netAddress.sendMsg('newStaff', oscPath, route, currentOutputFileName);
+		//success.postln;
+		//currentOutputFileName.postln;
 		netAddress.sendMsg('newStaff', route, currentOutputFileName);
-/*
-		Entiendo que no es necesario porque write usa systemCmd (sincrónico)
-			success = selection.write.asSVG(crop: crop) }
-
-
-		fileExist = Task {
-			while ( { File.exists(success[0]).not },
-				{
-					"file doesn't exists".postln;
-					success[0].postln;
-					File.exists(success[0]).postln;
-					0.1.wait;
-				}
-			)
-		};
-
-		doneTask = Task {
-			netAddress.sendMsg(oscPath, route, svg);
-			"Render finished".postln;
-
-		};
-
-		watcher = SimpleController(fileExist)
-		.put(\stopped, { |... args|
-			watcher.remove;
-			args.debug("got stopped notification");
-			doneTask.play;
-		});
-
-		fileExist.play;
-
-*/
-		/*
-
-		if len(music) > 1:
-		music.simultaneous = True
-		for i, voice in enumerate(music):
-		if i % 2 == 0: #if voice number is even
-		direction = Down
-		else:
-		direction = Up
-		voice_direction[voice.name] = direction
-		override(voice).stem.direction = direction
-		else:
-		voice = music[0]
-		voice_direction[voice.name] = None
-
-		output_path = args.instrument+'/svg/output'
-		*/
 	}
 
 	preview { |id, pbind|
@@ -142,7 +100,6 @@ FoscPbindScore {
 		ev.instrumentPath !? { this.instrument(ev.instrumentPath) };
 
 		//ev.debug("****** AFTER CLEANING NILS ******");
-		//("").postln;
 
 		if (ev.isRest)
 		{ leaf = FoscLeafMaker().([nil], [ev.dur.value]) } //.value strip Rest()
@@ -156,7 +113,12 @@ FoscPbindScore {
 			{ leaf[0].attach(FoscDynamic(ev.dynamic)) }
 		};
 
-		ev.articulation !? { leaf[0].attach(FoscArticulation(ev.articulation)) };
+		ev.articulation !? {
+			if ( (ev.articulation.asString.size > 0) && (ev.articulation != ' ') )
+		{ leaf[0].attach(FoscArticulation(ev.articulation)) }
+		{ ev.removeAt(\articulation) }
+		};
+		//ev.articulation.size > 0 { leaf[0].attach(FoscArticulation(ev.articulation)) };
 		ev.fermata !? { leaf[0].attach(FoscFermata(ev.fermata)) };
 		ev.markup !? { leaf[0].attach(FoscMarkup(ev.markup, ev.markupDir)) };
 		ev.noteheadStyle !? { leaf[0].noteHead.tweak.style = ev.noteheadStyle };
@@ -164,6 +126,8 @@ FoscPbindScore {
 		ev.noteheadColor !? { leaf[0].noteHead.tweak.color = ev.noteheadColor };
 
 		selection = selection ++ leaf;
+
+		//ev.debug("****** LAST CLEANING ******");
 
 	}
 
