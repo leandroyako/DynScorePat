@@ -27,6 +27,11 @@ FoscPbindScore {
 		netAddress.sendMsg('newPart', instrument)
 	}
 
+	deletePart { |instrument|
+		instrument = this.instrumentPath; //mmmm
+		netAddress.sendMsg('deletePart', instrument)
+	}
+
 	scroll {
 		netAddress.sendMsg('scroll', this.instrumentPath);
 	}
