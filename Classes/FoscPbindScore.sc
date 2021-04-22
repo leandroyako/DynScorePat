@@ -1,39 +1,48 @@
 FoscPbindScore {
 
-	var selection, netAddress, <>instrumentPath;
+	var selection, netAddress, <instrumentPath, <>instrumentName;
 
-	*new { |foscOutputSubdirPath, foscOutputDirectoryPath, netaddr |
-		^super.new.init(foscOutputSubdirPath, foscOutputDirectoryPath, netaddr)
+	*new { |name, path, foscOutputDirectoryPath, netaddr |
+		^super.new.init(name, path, foscOutputDirectoryPath, netaddr)
 	}
 
-	init { | foscOutputSubdirPath, foscOutputDirectoryPath, netaddr |
+	init { |name, path, foscOutputDirectoryPath, netaddr |
 		selection = FoscSelection();
 		FoscConfiguration.foscOutputDirectoryPath = foscOutputDirectoryPath;
-		this.instrument(foscOutputSubdirPath);
+		this.route(path);
+		instrumentName = name;
+		instrumentPath = path;
 		netAddress = netaddr;
 	}
 
+	route { |path|
+		FoscConfiguration.foscOutputSubdirPath = path;
+	}
+
+	name {
+		^instrumentName
+	}
+	/*
 	instrument { |path|
 		FoscConfiguration.foscOutputSubdirPath = path;
 		^instrumentPath = path;
 	}
+	*/
 
 	notes { |pbind|
 		^FoscPbindPattern.new(this, pbind, \note).play;
 	}
 
-	newPart { |instrument|
-		instrument = this.instrumentPath; //mmmm
-		netAddress.sendMsg('newPart', instrument)
+	newPart {
+		netAddress.sendMsg('newPart', instrumentPath, this.name)
 	}
 
-	deletePart { |instrument|
-		instrument = this.instrumentPath; //mmmm
-		netAddress.sendMsg('deletePart', instrument)
+	deletePart {
+		netAddress.sendMsg('deletePart', instrumentPath)
 	}
 
 	scroll {
-		netAddress.sendMsg('scroll', this.instrumentPath);
+		netAddress.sendMsg('scroll', instrumentPath);
 	}
 
 
@@ -102,13 +111,16 @@ FoscPbindScore {
 			{ ev.put(key, value) }
 		};
 
-		ev.instrumentPath !? { this.instrument(ev.instrumentPath) };
+		ev.route !? { this.route(ev.route) };
 
 		//ev.debug("****** AFTER CLEANING NILS ******");
 
 		if (ev.isRest)
-		{ leaf = FoscLeafMaker().([nil], [ev.dur.value]) } //.value strip Rest()
-		{ leaf = FoscLeafMaker().([FoscPitch(ev.freq.cpsmidi)], [ev.dur]) };
+		{
+			leaf = FoscLeafMaker().([nil], [ev.dur.value]);
+		} //.value strip Rest()
+		{ //attach to notes only
+			leaf = FoscLeafMaker().([FoscPitch(ev.freq.cpsmidi)], [ev.dur]);
 
 		//workaround for broken FoscDynamic
 		ev.dynamic !? {
@@ -124,20 +136,21 @@ FoscPbindScore {
 		{ ev.removeAt(\articulation) }
 		};
 		//ev.articulation.size > 0 { leaf[0].attach(FoscArticulation(ev.articulation)) };
-		ev.fermata !? { leaf[0].attach(FoscFermata(ev.fermata)) };
+
 		ev.markup !? { leaf[0].attach(FoscMarkup(ev.markup, ev.markupDir)) };
 		ev.noteheadStyle !? { leaf[0].noteHead.tweak.style = ev.noteheadStyle };
 		ev.noteheadSize !? { leaf[0].noteHead.tweak.fontSize = ev.noteheadSize };
 		ev.noteheadColor !? { leaf[0].noteHead.tweak.color = ev.noteheadColor };
+		};
 
-		selection = selection ++ leaf;
-
-		//ev.debug("****** LAST CLEANING ******");
-
+	//attach to any leaf
+	ev.fermata !? { leaf[0].attach(FoscFermata(ev.fermata)) };
+	//ev.markup maybe?
+	selection = selection ++ leaf;
+	//ev.debug("****** LAST CLEANING ******");
 	}
 
 	prModEvent { |path, msg|
 		//NetAddr(host, port).sendMsg(path, msg);
-		//mmm no estoy seguro si se usa
 	}
 }
