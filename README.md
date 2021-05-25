@@ -1,4 +1,4 @@
-# FoscPbind
+# DynScore
 
 **(work in progress)** Render Fosc scores (Abjad port to SC) using SuperCollider Patterns.
 
@@ -12,7 +12,7 @@
 Open a new document on your SuperCollider IDE and type:
 
 ```supercollider
-Quarks.install("... FoscPbind");
+Quarks.install("... DynScore");
 ```
 
 ## Usage
@@ -33,7 +33,7 @@ p = Pbind(
 );
 )
 
-a = FoscPbindScore.new;
+a = DynScore.new;
 a.notes('testPattern', p);
 a.render;
 
@@ -42,7 +42,7 @@ a.render;
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at
-https://github.com/leandroyako/FoscPbind. This project is intended to be a safe,
+https://github.com/leandroyako/DynScore. This project is intended to be a safe,
 welcoming space for collaboration, and contributors are expected to adhere to
 the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
