@@ -1,6 +1,6 @@
 DynScore {
 
-	var selection, netAddress, <instrumentPath, <>instrumentName;
+	var foscStaff, selection, netAddress, <instrumentPath, <>instrumentName;
 
 	*new { |name, path, foscOutputDirectoryPath, netaddr |
 		^super.new.init(name, path, foscOutputDirectoryPath, netaddr)
@@ -8,29 +8,28 @@ DynScore {
 
 	init { |name, path, foscOutputDirectoryPath, netaddr |
 		selection = FoscSelection();
+		foscStaff = FoscStaff();
 		FoscConfiguration.foscOutputDirectoryPath = foscOutputDirectoryPath;
-		this.route(path);
+		FoscConfiguration.foscOutputSubdirPath = path;
 		instrumentName = name;
 		instrumentPath = path;
 		netAddress = netaddr;
 	}
 
-	route { |path|
-		FoscConfiguration.foscOutputSubdirPath = path;
-	}
-
-	name {
-		^instrumentName
-	}
 	/*
-	instrument { |path|
+	route { |path|
 		FoscConfiguration.foscOutputSubdirPath = path;
 		^instrumentPath = path;
 	}
 	*/
 
-	notes { |pbind|
-		^DynScorePat.new(this, pbind, \note).play;
+	name {
+		^instrumentName
+	}
+
+	notes { |pbind, overwrite = true|
+		if (overwrite) { selection = FoscSelection(); foscStaff = FoscStaff() };
+		DynScorePat.new(this, pbind, \note).play;
 	}
 
 	newPart {
@@ -46,31 +45,25 @@ DynScore {
 	}
 
 
-	selection{
-		^selection;
+	staff{
+		^foscStaff.add(selection);
 	}
 
 	format {
-		^FoscContainer(selection).format;
+		^this.staff.format;
 	}
 
 	render { |id, pbind, format = 'svg', crop = true|
-		var oscPath = FoscConfiguration.foscOutputSubdirPath;
-		var route = FoscConfiguration.foscOutputSubdirPath.asString;
-		var lastOutputFileName = FoscIOManager.lastOutputFileName.asString.split($.)[0]; //UNUSED
-		var success, currentOutputFileName;//FoscPersistenceManager ^[outputPath, success];
+		var success, currentOutputFileName; //from FoscPersistenceManager ^[outputPath, success];
+		FoscConfiguration.foscOutputSubdirPath = this.instrumentPath;
 
 		/* write file */
-		//"% format".format(format).postln;
 		if (format == 'svg')
-		{ success = selection.write.asSVG(crop: crop) }
-		{ selection.show }; //why?
+		{ success = this.staff.write.asSVG(crop: crop) }
+		{ "DynScoreViz needs svg format to render properly".warn; this.staff.show }; //why?
 
-		//lastOutputFileName.postln;
 		currentOutputFileName = success[0].asString.split($.)[0].split($/).last;
-		//success.postln;
-		//currentOutputFileName.postln;
-		netAddress.sendMsg('newStaff', route, currentOutputFileName);
+		netAddress.sendMsg('newStaff', this.instrumentPath, currentOutputFileName);
 	}
 
 	preview { |id, pbind|
@@ -103,8 +96,6 @@ DynScore {
 	prEvents { |ev|
 		var leaf;
 
-		//ev.debug("****** BEFORE CLEANING NILS ******");
-
 		ev.keysValuesDo { |key, value|
 			if (value === Nil)
 			{ ev.removeAt(key) }
@@ -112,8 +103,6 @@ DynScore {
 		};
 
 		ev.route !? { this.route(ev.route) };
-
-		//ev.debug("****** AFTER CLEANING NILS ******");
 
 		if (ev.isRest)
 		{
@@ -147,10 +136,10 @@ DynScore {
 	ev.fermata !? { leaf[0].attach(FoscFermata(ev.fermata)) };
 	//ev.markup maybe?
 	selection = selection ++ leaf;
-	//ev.debug("****** LAST CLEANING ******");
 	}
 
 	prModEvent { |path, msg|
+		"not implemented yet".error;
 		//NetAddr(host, port).sendMsg(path, msg);
 	}
 }

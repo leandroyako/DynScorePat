@@ -1,0 +1,8 @@
+(
+  \name: "DynScore",
+  \summary: "A set of classes for writing scores using Fosc and Pattern classes.",
+  \author: "Leandro Yako",
+  \version: "0.1.0",
+  \license: "GPL-3.0-or-later",
+  \dependencies: [] //Fosc
+)
