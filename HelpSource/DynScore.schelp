@@ -1,0 +1,151 @@
+TITLE:: DynScore
+summary:: Render music scores using SuperCollider pattern library
+categories:: DynScore
+​
+DESCRIPTION::
+DynScore creates music scores dynamically using SC patterns. It dependes on Fosc quark link::https://github.com/n-armstrong/fosc:: to render the music. It is intended to be used with DynScoreViz link::https://github.com/leandroyako/DynScoreViz:: to display scores on the browser.
+​
+
+code::
+
+o = "~/DynScoreViz/public/svg/".standardizePath; //path to DynScoreViz svg folder
+n = NetAddr.new("127.0.0.1", 9912);
+p = Pbind(\note, Pseries(0, 1, 13), \dur, Pseq([Pn(1/16, 12), 1/4]));
+~score = DynScore.new("Instrument 1", "instrument1", o, n);
+~score.newPart;
+~score.notes(p);
+~score.render.scroll;
+::
+​
+CLASSMETHODS::
+​
+METHOD:: new
+argument:: name
+part name displayed on DynScoreViz menu
+argument:: path
+part path used on DynScoreViz part URL
+argument:: foscOutputDirectoryPath
+path to DynScoreViz svg folder
+argument:: netaddr
+IP address of machine running DynScoreViz
+​
+​
+INSTANCEMETHODS::
+​
+METHOD:: staff
+Returns current score FoscStaff object. Is possible apply further modifications to the score using Fosc classes.
+​
+METHOD:: render
+Render current score
+argument:: id
+argument:: pbind
+argument:: format
+Svg should be the chosen image format, although it's possible to use other Lilypond supported formats
+argument:: crop
+Match the size of full page LilyPond's output to the typeset image
+​
+METHOD:: deletePart
+Delete current instrument
+​
+METHOD:: instrumentName
+Set part name displayed on DynScoreViz menu
+​
+METHOD:: newPart
+Creates new part
+​
+METHOD:: instrumentPath
+Returns part path
+​
+METHOD:: name
+Return part name displayed on DynScoreViz menu
+​
+METHOD:: notes
+Use Pbind to create part notes
+argument:: pbind
+argument:: overwrite
+Overwites previous notes. If false notes will be added after the above.
+​
+METHOD:: scroll
+Scroll score on DynScoreViz
+​
+METHOD:: format
+Return LilyPond string
+​
+​
+EXAMPLES::
+​
+code::
+(
+//setup
+
+OSCdef(\dynscore,
+	{|msg|
+		msg.postln;
+	}, 'status' //DynScoreViz sends current IP and port on launch
+);
+
+s.latency = 0.2;
+
+~tempo = 120/60;
+~abletonLink = LinkClock(1).latency_(s.latency);
+~abletonLink.tempo = ~tempo;
+n = NetAddr.new("127.0.0.1", 9912);
+o = "~/DynScoreViz/public/svg/".standardizePath;
+
+~patterns = [
+
+	Pbind(*[note: Pseq([4,5,4], 1), dur: Pseq([1/8, 1/4, 1/4], 1), octave: 5]),
+
+	Pbind(*[note: Pseq([7, 6], 1), dur: Pseq([1/16, 1/16], 1), octave: 5]),
+
+	Pbind(*[note: Pseq([5, 7, 11, 7, 11, 7, 11, 7, 11, 7, Rest(), Rest(), 10, 19, 21, 19, 23, 21, 19, 16, 19, 18, Rest(), Rest(), Rest(), 16, 17], 1), dur: Pseq([1/16, 1/16, 1/16, 1/16, 1/16, 1/16, 1/16, 1/16, 1/16, 1/16, 1/8, 3/4, 1/4, 3/4, 1/8, 1/4, 1/8, 1.5/4, 1/8, 3/4, 1/8, 1/8, 3/4, 1/8, 1/2, 2.5/4, 1.5], 1), octave: 5]),
+];
+
+//Aux funcs
+
+~staffSettings = {
+	| part, beamRests = true |
+	var timeSignature = FoscTimeSignature(#[8,1]);
+	override(part.staff).timeSignature.stencil_(false);
+	override(part.staff).barNumber.transparent_(true);
+	override(part.staff).barLine.stencil_(true);
+	override(part.staff).spanBar.stencil_(false);
+	set(part.staff).autoBeaming = false;
+	FoscBeamSpecifier(beamRests: beamRests).(part.staff.selectLeaves.partitionBySizes([4], true));
+	part.staff.attach(FoscRepeat());
+	part.staff[0].attach(timeSignature);
+};
+
+~addGraceNote = {
+	| part, pos = 0, note = 60, dur = (1/8), slurred = true, slashed = true|
+	var graceNote = FoscGraceContainer([FoscNote(note, dur)], slashed: slashed, slurred: slurred);
+	part.staff[pos].attach(graceNote);
+};
+)
+
+~instr = [\Piano, \Flute, \Marimba];
+
+~score = ~instr.collect({|instr|
+	DynScore.new(instr, instr.toLower, o, n)
+	})
+
+~score.do(_.newPart)
+//~score.do(_.deletePart)
+
+~score[0].notes(~patterns[2])
+~staffSettings.(~score[0], false)
+~score[0].render.scroll
+~score[0].scroll
+
+~score[1].notes(~patterns[1])
+~staffSettings.(~score[1], false)
+~score[1].render.scroll
+~score[1].scroll
+
+~score[2].notes(~patterns[0])
+~addGraceNote.(~score[0], 0)
+~staffSettings.(~score[2], false)
+~score[2].render.scroll
+~score[2].scroll
+::
+​

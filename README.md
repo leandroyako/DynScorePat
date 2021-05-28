@@ -12,7 +12,7 @@
 Open a new document on your SuperCollider IDE and type:
 
 ```supercollider
-Quarks.install("... DynScore");
+Quarks.install("https://github.com/leandroyako/DynScorePat");
 ```
 
 ## Usage
