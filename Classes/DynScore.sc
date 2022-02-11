@@ -45,7 +45,27 @@ DynScore {
 				);
 				(this.clock.beatDur * this.clock.beatsPerBar).wait;
 			}
-		}
+		};
+
+		OSCdef(\status,
+			{ |msg|
+				msg.postln;
+			},
+			'/dynscore/status'
+		);
+
+		OSCdef(\join,
+			{ |msg|
+				msg.postln;
+			},
+			'/dynscore/join'
+		);
+		OSCdef(\leave,
+			{ |msg|
+				msg.postln;
+			},
+			'/dynscore/leave'
+		);
 	}
 
 	currentBar {
