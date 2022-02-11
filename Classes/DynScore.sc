@@ -1,6 +1,6 @@
 DynScore {
 
-	var netAddress, abjadAddress,
+	var netAddress, abjadAddress, <>dynScoreVizPath,
 	foscStaff, selection, autoscrollTask, <>clock,
 	<instrumentPath, <>instrumentName,
 	<>initTime, <>eventType;
@@ -300,6 +300,24 @@ DynScore {
 
 			netAddress.sendMsg('clearPreview', this.instrumentPath);
 		})
+	}
+
+	webview {
+		var browser, webview;
+
+		webview = WebView().url = "0.0.0.0:3000/composer";
+		browser = View(bounds:900@700).layout_(VLayout(
+			HLayout(
+				webview
+			)
+		));
+		browser.front;
+	}
+
+	start {
+		var cmd = ("cd "++ dynScoreVizPath ++ "; node app");
+		cmd.debug("cmd");
+		cmd.unixCmd{ |res, pid| [\done, res, pid].postln };
 	}
 
 	prSvg { |id, pbind, format = 'svg', crop = true, subdirPath|
